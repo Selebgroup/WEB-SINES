@@ -485,7 +485,7 @@ export default function Home() {
                 <div key={`${c.country}-${c.code ?? ''}`} className="flex items-center justify-between border rounded-md p-3">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">{flagEmoji(c.code, c.country)}</span>
-                    <span className="text-gray-800">{c.country}</span>
+                    <span className="text-black">{c.country}</span>
                   </div>
                   <span className="font-semibold text-gray-900">{c.count}</span>
                 </div>
