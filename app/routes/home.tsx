@@ -73,35 +73,19 @@ export async function loader() {
   if (reportRes.ok) {
     const report = await reportRes.json();
     const rows = report.rows ?? [];
-    for (const row of rows) {
-      const country = row.dimensionValues?.[0]?.value ?? "Unknown";
-      const countStr = row.metricValues?.[0]?.value ?? "0";
-      const count = Number(countStr);
-      totalSessions += count;
-      topCountries.push({ country, count });
+    const cleaned = rows
+      .map((row: any): { country: string; count: number } => ({
+        country: row.dimensionValues?.[0]?.value ?? "",
+        count: Number(row.metricValues?.[0]?.value ?? "0"),
+      }))
+      .filter((r: { country: string; count: number }) => r.country && r.country.toLowerCase() !== "(not set)" && r.country.toLowerCase() !== "not set" && r.count > 0);
+    for (const r of cleaned) {
+      totalSessions += r.count;
+      topCountries.push({ country: r.country, count: r.count });
     }
   }
 
-  if (totalSessions === 0) {
-    const rtRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runRealtimeReport`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        dimensions: [{ name: "country" }],
-        metrics: [{ name: "activeUsers" }],
-        limit: 10,
-      }),
-    });
-    if (rtRes.ok) {
-      const rt = await rtRes.json();
-      const rows = rt.rows ?? [];
-      topCountries = rows.map((row: any) => ({
-        country: row.dimensionValues?.[0]?.value ?? "Unknown",
-        count: Number(row.metricValues?.[0]?.value ?? "0"),
-      }));
-      return { totalSessions: null as number | null, topCountries };
-    }
-  }
+  // Do not use realtime fallback; only show 30-day aggregated data
 
   return { totalSessions, topCountries };
 }
