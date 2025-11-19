@@ -1,6 +1,7 @@
 import type { Route } from "./+types/home";
 import { useState, useEffect } from "react";
 import { Link, useLoaderData } from "react-router";
+import crypto from "node:crypto";
 import type { Berita } from "../data/data_berita";
 import { getAllBerita } from "../data/data_berita";
 import { getAllFacultyMembers } from "../data/facultyData";
@@ -14,7 +15,95 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 export async function loader() {
-  return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
+  const propertyId = process.env.GA_PROPERTY_ID;
+  const clientEmail = process.env.GA_CLIENT_EMAIL;
+  const privateKeyEnv = process.env.GA_PRIVATE_KEY;
+  const privateKey = privateKeyEnv ? privateKeyEnv.replace(/\\n/g, "\n") : undefined;
+  if (!propertyId || !clientEmail || !privateKey) {
+    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
+  const claim = Buffer.from(JSON.stringify({
+    iss: clientEmail,
+    scope: "https://www.googleapis.com/auth/analytics.readonly",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  })).toString("base64url");
+  const signingInput = `${header}.${claim}`;
+  const signer = crypto.createSign("RSA-SHA256");
+  signer.update(signingInput);
+  const signature = signer.sign(privateKey).toString("base64url");
+  const assertion = `${signingInput}.${signature}`;
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  if (!tokenRes.ok) {
+    return { totalSessions: null as number | null, topCountries: [] };
+  }
+  const tokenJson = await tokenRes.json();
+  const accessToken = tokenJson.access_token as string | undefined;
+  if (!accessToken) {
+    return { totalSessions: null as number | null, topCountries: [] };
+  }
+
+  const reportRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+      dimensions: [{ name: "country" }],
+      metrics: [{ name: "sessions" }],
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      limit: 10,
+    }),
+  });
+
+  let totalSessions = 0;
+  let topCountries: { country: string; count: number }[] = [];
+
+  if (reportRes.ok) {
+    const report = await reportRes.json();
+    const rows = report.rows ?? [];
+    for (const row of rows) {
+      const country = row.dimensionValues?.[0]?.value ?? "Unknown";
+      const countStr = row.metricValues?.[0]?.value ?? "0";
+      const count = Number(countStr);
+      totalSessions += count;
+      topCountries.push({ country, count });
+    }
+  }
+
+  if (totalSessions === 0) {
+    const rtRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runRealtimeReport`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dimensions: [{ name: "country" }],
+        metrics: [{ name: "activeUsers" }],
+        limit: 10,
+      }),
+    });
+    if (rtRes.ok) {
+      const rt = await rtRes.json();
+      const rows = rt.rows ?? [];
+      topCountries = rows.map((row: any) => ({
+        country: row.dimensionValues?.[0]?.value ?? "Unknown",
+        count: Number(row.metricValues?.[0]?.value ?? "0"),
+      }));
+      return { totalSessions: null as number | null, topCountries };
+    }
+  }
+
+  return { totalSessions, topCountries };
 }
 // ini command
 export default function Home() {
