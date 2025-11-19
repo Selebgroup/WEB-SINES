@@ -5,7 +5,7 @@ import type { Berita } from "../data/data_berita";
 import { getAllBerita } from "../data/data_berita";
 import { getAllFacultyMembers } from "../data/facultyData";
 import { getAllRiset } from "../data/data_riset";
-import { BetaAnalyticsDataClient } from "@google-analytics/data";
+// GA4 Data API will be enabled later via server-side fetch
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -14,32 +14,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 export async function loader() {
-  const propertyId = process.env.GA_PROPERTY_ID;
-  const clientEmail = process.env.GA_CLIENT_EMAIL;
-  const privateKeyEnv = process.env.GA_PRIVATE_KEY;
-  const privateKey = privateKeyEnv ? privateKeyEnv.replace(/\\n/g, "\n") : undefined;
-  if (!propertyId || !clientEmail || !privateKey) {
-    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
-  }
-  const client = new BetaAnalyticsDataClient({ credentials: { client_email: clientEmail, private_key: privateKey } });
-  const [report] = await client.runReport({
-    property: `properties/${propertyId}`,
-    dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-    dimensions: [{ name: "country" }],
-    metrics: [{ name: "sessions" }],
-    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-    limit: 10,
-  });
-  let totalSessions = 0;
-  const topCountries: { country: string; count: number }[] = [];
-  for (const row of report.rows ?? []) {
-    const country = row.dimensionValues?.[0]?.value ?? "Unknown";
-    const countStr = row.metricValues?.[0]?.value ?? "0";
-    const count = Number(countStr);
-    totalSessions += count;
-    topCountries.push({ country, count });
-  }
-  return { totalSessions, topCountries };
+  return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
 }
 // ini command
 export default function Home() {
