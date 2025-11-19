@@ -374,6 +374,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <Meta />
           <Links />
+          <script async src="https://www.googletagmanager.com/gtag/js?id=G-SCSGS4K5JF"></script>
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                "window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-SCSGS4K5JF');",
+            }}
+          />
         </head>
         <body className="min-h-screen bg-gray-50">
           {children}
@@ -392,6 +399,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-SCSGS4K5JF"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-SCSGS4K5JF');",
+          }}
+        />
       </head>
       <body className="min-h-screen flex flex-col">
         <Navigation />

@@ -1,10 +1,11 @@
 import type { Route } from "./+types/home";
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import type { Berita } from "../data/data_berita";
 import { getAllBerita } from "../data/data_berita";
 import { getAllFacultyMembers } from "../data/facultyData";
 import { getAllRiset } from "../data/data_riset";
+import { BetaAnalyticsDataClient } from "@google-analytics/data";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -12,8 +13,37 @@ export function meta({}: Route.MetaArgs) {
     { name: "description", content: "Kelompok Riset Sistem Elektronika Cerdas Berkelanjutan - Mengembangkan teknologi elektronika yang inovatif dan berkelanjutan" },
   ];
 }
+export async function loader() {
+  const propertyId = process.env.GA_PROPERTY_ID;
+  const clientEmail = process.env.GA_CLIENT_EMAIL;
+  const privateKeyEnv = process.env.GA_PRIVATE_KEY;
+  const privateKey = privateKeyEnv ? privateKeyEnv.replace(/\\n/g, "\n") : undefined;
+  if (!propertyId || !clientEmail || !privateKey) {
+    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
+  }
+  const client = new BetaAnalyticsDataClient({ credentials: { client_email: clientEmail, private_key: privateKey } });
+  const [report] = await client.runReport({
+    property: `properties/${propertyId}`,
+    dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+    dimensions: [{ name: "country" }],
+    metrics: [{ name: "sessions" }],
+    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    limit: 10,
+  });
+  let totalSessions = 0;
+  const topCountries: { country: string; count: number }[] = [];
+  for (const row of report.rows ?? []) {
+    const country = row.dimensionValues?.[0]?.value ?? "Unknown";
+    const countStr = row.metricValues?.[0]?.value ?? "0";
+    const count = Number(countStr);
+    totalSessions += count;
+    topCountries.push({ country, count });
+  }
+  return { totalSessions, topCountries };
+}
 // ini command
 export default function Home() {
+  const analytics = useLoaderData<typeof loader>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [news, setNews] = useState<Berita[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -378,6 +408,37 @@ export default function Home() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-xl shadow-md p-6 sm:p-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Pengunjung</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-1">
+                <div className="flex items-center space-x-4">
+                  <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-xl">🌍</div>
+                  <div>
+                    <div className="text-gray-600">Jumlah Kunjungan (30 hari)</div>
+                    <div className="text-3xl font-bold text-gray-900">{analytics?.totalSessions ?? '...'}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {(analytics?.topCountries ?? []).slice(0, 6).map((c) => (
+                    <div key={c.country} className="flex justify-between border rounded-md p-3">
+                      <span className="text-gray-700">{c.country}</span>
+                      <span className="font-semibold text-gray-900">{c.count}</span>
+                    </div>
+                  ))}
+                  {(analytics?.topCountries ?? []).length === 0 && (
+                    <div className="text-gray-500">Data belum tersedia</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>
