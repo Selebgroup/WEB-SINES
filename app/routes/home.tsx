@@ -20,7 +20,7 @@ export async function loader() {
   const privateKeyEnv = process.env.GA_PRIVATE_KEY;
   const privateKey = privateKeyEnv ? privateKeyEnv.replace(/\\n/g, "\n") : undefined;
   if (!propertyId || !clientEmail || !privateKey) {
-    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number; code?: string }[] };
+    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -47,12 +47,12 @@ export async function loader() {
     }),
   });
   if (!tokenRes.ok) {
-    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number; code?: string }[] };
+    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
   }
   const tokenJson = await tokenRes.json();
   const accessToken = tokenJson.access_token as string | undefined;
   if (!accessToken) {
-    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number; code?: string }[] };
+    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
   }
 
   const reportRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
@@ -60,7 +60,7 @@ export async function loader() {
     headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-      dimensions: [{ name: "country" }, { name: "countryId" }],
+      dimensions: [{ name: "country" }],
       metrics: [{ name: "sessions" }],
       orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
       limit: 10,
@@ -68,18 +68,17 @@ export async function loader() {
   });
 
   let totalSessions = 0;
-  let topCountries: { country: string; count: number; code?: string }[] = [];
+  let topCountries: { country: string; count: number }[] = [];
 
   if (reportRes.ok) {
     const report = await reportRes.json();
     const rows = report.rows ?? [];
     for (const row of rows) {
       const country = row.dimensionValues?.[0]?.value ?? "Unknown";
-      const code = row.dimensionValues?.[1]?.value ?? undefined;
       const countStr = row.metricValues?.[0]?.value ?? "0";
       const count = Number(countStr);
       totalSessions += count;
-      topCountries.push({ country, count, code });
+      topCountries.push({ country, count });
     }
   }
 
@@ -88,7 +87,7 @@ export async function loader() {
       method: "POST",
       headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        dimensions: [{ name: "country" }, { name: "countryId" }],
+        dimensions: [{ name: "country" }],
         metrics: [{ name: "activeUsers" }],
         limit: 10,
       }),
@@ -98,7 +97,6 @@ export async function loader() {
       const rows = rt.rows ?? [];
       topCountries = rows.map((row: any) => ({
         country: row.dimensionValues?.[0]?.value ?? "Unknown",
-        code: row.dimensionValues?.[1]?.value ?? undefined,
         count: Number(row.metricValues?.[0]?.value ?? "0"),
       }));
       return { totalSessions: null as number | null, topCountries };
@@ -482,9 +480,8 @@ export default function Home() {
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Pengunjung</h3>
             <div className="space-y-3">
               {(analytics?.topCountries ?? []).slice(0, 10).map((c) => (
-                <div key={`${c.country}-${c.code ?? ''}`} className="flex items-center justify-between border rounded-md p-3">
+                <div key={c.country} className="flex items-center justify-between border rounded-md p-3">
                   <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{flagEmoji(c.code, c.country)}</span>
                     <span className="text-black">{c.country}</span>
                   </div>
                   <span className="font-semibold text-gray-900">{c.count}</span>
@@ -509,30 +506,4 @@ const truncateText = (text: string, wordLimit: number) => {
   return text;
 };
 
-function flagEmoji(code?: string, country?: string) {
-  const upper = (code || '').toUpperCase();
-  if (upper.length === 2 && /^[A-Z]{2}$/.test(upper)) {
-    const base = 0x1f1e6;
-    const first = base + (upper.charCodeAt(0) - 65);
-    const second = base + (upper.charCodeAt(1) - 65);
-    return String.fromCodePoint(first) + String.fromCodePoint(second);
-  }
-  const fallback: Record<string, string> = {
-    Indonesia: '🇮🇩',
-    'United States': '🇺🇸',
-    Japan: '🇯🇵',
-    India: '🇮🇳',
-    Germany: '🇩🇪',
-    France: '🇫🇷',
-    Canada: '🇨🇦',
-    Australia: '🇦🇺',
-    'United Kingdom': '🇬🇧',
-    China: '🇨🇳',
-    'South Korea': '🇰🇷',
-    Brazil: '🇧🇷',
-    Mexico: '🇲🇽',
-    Italy: '🇮🇹',
-    Spain: '🇪🇸',
-  };
-  return (country && fallback[country]) || '🌍';
-}
+// Flag rendering removed per request; countries are shown by name only.
