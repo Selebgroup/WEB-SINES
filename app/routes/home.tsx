@@ -461,7 +461,7 @@ export default function Home() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-md p-6 sm:p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Pengunjung</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Visitors</h3>
             <div className="space-y-3">
               {(analytics?.topCountries ?? []).slice(0, 10).map((c) => (
                 <div key={c.country} className="flex items-center justify-between border rounded-md p-3">
