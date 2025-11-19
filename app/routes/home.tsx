@@ -5,6 +5,7 @@ import type { Berita } from "../data/data_berita";
 import { getAllBerita } from "../data/data_berita";
 import { getAllFacultyMembers } from "../data/facultyData";
 import { getAllRiset } from "../data/data_riset";
+import { BetaAnalyticsDataClient } from "@google-analytics/data";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -13,7 +14,32 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 export async function loader() {
-  return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
+  const propertyId = process.env.GA_PROPERTY_ID;
+  const clientEmail = process.env.GA_CLIENT_EMAIL;
+  const privateKeyEnv = process.env.GA_PRIVATE_KEY;
+  const privateKey = privateKeyEnv ? privateKeyEnv.replace(/\\n/g, "\n") : undefined;
+  if (!propertyId || !clientEmail || !privateKey) {
+    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
+  }
+  const client = new BetaAnalyticsDataClient({ credentials: { client_email: clientEmail, private_key: privateKey } });
+  const [report] = await client.runReport({
+    property: `properties/${propertyId}`,
+    dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+    dimensions: [{ name: "country" }],
+    metrics: [{ name: "sessions" }],
+    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    limit: 10,
+  });
+  let totalSessions = 0;
+  const topCountries: { country: string; count: number }[] = [];
+  for (const row of report.rows ?? []) {
+    const country = row.dimensionValues?.[0]?.value ?? "Unknown";
+    const countStr = row.metricValues?.[0]?.value ?? "0";
+    const count = Number(countStr);
+    totalSessions += count;
+    topCountries.push({ country, count });
+  }
+  return { totalSessions, topCountries };
 }
 // ini command
 export default function Home() {
@@ -393,7 +419,7 @@ export default function Home() {
                 <div className="flex items-center space-x-4">
                   <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-xl">🌍</div>
                   <div>
-                    <div className="text-gray-600">Jumlah Kunjungan (30 hari)</div>
+                    <div className="text-gray-600">{analytics?.totalSessions != null ? 'Jumlah Kunjungan (30 hari)' : 'Pengguna Aktif (Realtime)'}</div>
                     <div className="text-3xl font-bold text-gray-900">{analytics?.totalSessions ?? '...'}</div>
                   </div>
                 </div>
