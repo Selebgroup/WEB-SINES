@@ -319,32 +319,31 @@ export default function Contact() {
           </div>
 
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden hover:shadow-2xl transition-all duration-300">
-            <div className="aspect-w-16 aspect-h-9 bg-gradient-to-br from-emerald-100 to-green-50 flex items-center justify-center p-8 sm:p-12">
-              <div className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
-                  <span className="text-3xl sm:text-4xl">🗺️</span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Peta Lokasi</h3>
-                <p className="text-gray-600 mb-4 sm:mb-6 text-base sm:text-lg leading-relaxed">
-                  SELEB Research Group<br />
-                  KST Samaun Samadikun<br />
-                  Jl. Sangkuriang, Dago<br />
-                  Kecamatan Coblong, Kota Bandung 40135<br />
-                  Jawa Barat, Indonesia
-                </p>
-                <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-                  <a 
-                    href="https://maps.app.goo.gl/VVn3LV9vZCfNYppe6" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg text-sm sm:text-base text-center"
-                  >
-                    Open in Google Maps
-                  </a>
-                  <button className="border-2 border-emerald-600 text-emerald-600 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium hover:bg-emerald-50 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
-                    Directions
-                  </button>
-                </div>
+            <div className="aspect-w-16 aspect-h-9 bg-gradient-to-br from-emerald-100 to-green-50">
+              <iframe
+                title="Peta Lokasi SELEB Research Group"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=107.601177%2C-6.891914%2C107.621177%2C-6.871914&layer=mapnik&marker=-6.881914%2C107.611177"
+                className="w-full h-full min-h-[320px] sm:min-h-[380px]"
+                loading="lazy"
+              ></iframe>
+            </div>
+            <div className="p-5 sm:p-6 text-center">
+              <p className="text-gray-700 mb-3 sm:mb-4 text-xs sm:text-sm leading-relaxed max-w-xl mx-auto">
+                SELEB Research Group<br />
+                KST Samaun Samadikun
+                Jl. Sangkuriang, Dago
+                Kecamatan Coblong, Kota Bandung 40135
+                Jawa Barat, Indonesia
+              </p>
+              <div className="flex justify-center">
+                <a
+                  href="https://www.openstreetmap.org/?mlat=-6.881914&mlon=107.611177#map=16/-6.881914/107.611177"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium hover:from-emerald-700 hover:to-green-700 transition-all duration-300 shadow-md text-xs sm:text-sm text-center"
+                >
+                  Open Map
+                </a>
               </div>
             </div>
           </div>
