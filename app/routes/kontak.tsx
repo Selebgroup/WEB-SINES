@@ -1,4 +1,5 @@
 import type { Route } from "./+types/kontak";
+import { useEffect, useRef } from "react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,6 +9,40 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Contact() {
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const lat = -6.881914;
+  const lon = 107.611177;
+  useEffect(() => {
+    let instance: any;
+    const init = async () => {
+      const L = await import("leaflet");
+      if (!mapRef.current) return;
+      instance = L.map(mapRef.current, { zoomControl: true });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+        maxZoom: 19,
+      }).addTo(instance);
+      instance.setView([lat, lon], 10);
+      setTimeout(() => {
+        instance.once("moveend", () => {
+          const icon = L.icon({
+            iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+            iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+            shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            shadowSize: [41, 41],
+          });
+          L.marker([lat, lon], { icon }).addTo(instance);
+        });
+        instance.flyTo([lat, lon], 18, { duration: 2 });
+      }, 500);
+    };
+    init();
+    return () => {
+      if (instance) instance.remove();
+    };
+  }, []);
   return (
     <div className="min-h-screen pt-20">
       {/* Hero Section */}
@@ -320,12 +355,7 @@ export default function Contact() {
 
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden hover:shadow-2xl transition-all duration-300">
             <div className="aspect-w-16 aspect-h-9 bg-gradient-to-br from-emerald-100 to-green-50">
-              <iframe
-                title="Peta Lokasi SELEB Research Group"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=107.601177%2C-6.891914%2C107.621177%2C-6.871914&layer=mapnik&marker=-6.881914%2C107.611177"
-                className="w-full h-full min-h-[320px] sm:min-h-[380px]"
-                loading="lazy"
-              ></iframe>
+              <div ref={mapRef} className="w-full h-full min-h-[320px] sm:min-h-[380px]" />
             </div>
             <div className="p-5 sm:p-6 text-center">
               <p className="text-gray-700 mb-3 sm:mb-4 text-xs sm:text-sm leading-relaxed max-w-xl mx-auto">
@@ -337,7 +367,7 @@ export default function Contact() {
               </p>
               <div className="flex justify-center">
                 <a
-                  href="https://www.openstreetmap.org/?mlat=-6.881914&mlon=107.611177#map=16/-6.881914/107.611177"
+                  href="https://www.openstreetmap.org/?mlat=-6.881914&mlon=107.611177#map=18/-6.881914/107.611177"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium hover:from-emerald-700 hover:to-green-700 transition-all duration-300 shadow-md text-xs sm:text-sm text-center"
