@@ -400,14 +400,7 @@ export default function About() {
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
-            <button className="w-full sm:w-auto bg-white text-green-700 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-xl">
-              Start Collaboration
-            </button>
-            <button className="w-full sm:w-auto border-2 border-white text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg hover:bg-white hover:text-green-700 transform hover:scale-105 transition-all duration-300">
-              Learn More
-            </button>
-          </div>
+
           
           <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-white/20">
             <p className="text-sm sm:text-base md:text-lg text-green-100">
