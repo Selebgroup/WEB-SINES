@@ -20,7 +20,7 @@ export async function loader() {
   const privateKeyEnv = process.env.GA_PRIVATE_KEY;
   const privateKey = privateKeyEnv ? privateKeyEnv.replace(/\\n/g, "\n") : undefined;
   if (!propertyId || !clientEmail || !privateKey) {
-    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
+    return { totalSessions: null as number | null, topCountries: [] as { country: string; code: string; count: number }[] };
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -47,12 +47,12 @@ export async function loader() {
     }),
   });
   if (!tokenRes.ok) {
-    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
+    return { totalSessions: null as number | null, topCountries: [] as { country: string; code: string; count: number }[] };
   }
   const tokenJson = await tokenRes.json();
   const accessToken = tokenJson.access_token as string | undefined;
   if (!accessToken) {
-    return { totalSessions: null as number | null, topCountries: [] as { country: string; count: number }[] };
+    return { totalSessions: null as number | null, topCountries: [] as { country: string; code: string; count: number }[] };
   }
 
   const reportRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
@@ -60,7 +60,7 @@ export async function loader() {
     headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-      dimensions: [{ name: "country" }],
+      dimensions: [{ name: "country" }, { name: "countryIsoCode" }],
       metrics: [{ name: "sessions" }],
       orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
       limit: 10,
@@ -68,20 +68,21 @@ export async function loader() {
   });
 
   let totalSessions = 0;
-  let topCountries: { country: string; count: number }[] = [];
+  let topCountries: { country: string; code: string; count: number }[] = [];
 
   if (reportRes.ok) {
     const report = await reportRes.json();
     const rows = report.rows ?? [];
     const cleaned = rows
-      .map((row: any): { country: string; count: number } => ({
+      .map((row: any): { country: string; code: string; count: number } => ({
         country: row.dimensionValues?.[0]?.value ?? "",
+        code: row.dimensionValues?.[1]?.value ?? "",
         count: Number(row.metricValues?.[0]?.value ?? "0"),
       }))
-      .filter((r: { country: string; count: number }) => r.country && r.country.toLowerCase() !== "(not set)" && r.country.toLowerCase() !== "not set" && r.count > 0);
+      .filter((r: { country: string; code: string; count: number }) => r.country && r.country.toLowerCase() !== "(not set)" && r.country.toLowerCase() !== "not set" && r.count > 0);
     for (const r of cleaned) {
       totalSessions += r.count;
-      topCountries.push({ country: r.country, count: r.count });
+      topCountries.push({ country: r.country, code: r.code, count: r.count });
     }
   }
 
@@ -466,6 +467,15 @@ export default function Home() {
               {(analytics?.topCountries ?? []).slice(0, 10).map((c) => (
                 <div key={c.country} className="flex items-center justify-between border rounded-md p-3">
                   <div className="flex items-center space-x-3">
+                    <img 
+                      src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`}
+                      srcSet={`https://flagcdn.com/w80/${c.code.toLowerCase()}.png 2x`}
+                      width="30"
+                      height="20"
+                      alt={`Flag of ${c.country}`}
+                      className="rounded-sm shadow-sm object-cover border border-gray-200"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
                     <span className="text-black">{c.country}</span>
                   </div>
                   <span className="font-semibold text-gray-900">{c.count}</span>
@@ -489,5 +499,3 @@ const truncateText = (text: string, wordLimit: number) => {
   }
   return text;
 };
-
-// Flag rendering removed per request; countries are shown by name only.
